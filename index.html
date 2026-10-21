@@ -3,19 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bảo Mật Source Code - Pro</title>
+  <title>Bảo Mật Source Lua - Pro</title>
   
   <!-- CodeMirror -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+  <!-- Dùng theme mặc định (sáng) để đồng bộ với màu đen trắng -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
-  
-  <!-- Các Mode ngôn ngữ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/lua/lua.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
 
   <!-- Cloudflare Turnstile -->
@@ -23,58 +17,66 @@
 
   <style>
     :root {
-      --bg: #282a36; --panel: #44475a; --border: #6272a4; --text: #f8f8f2; --muted: #6272a4; 
-      --primary: #bd93f9; --primary-hover: #ff79c6; --danger: #ff5555; --success: #50fa7b; 
+      /* Bảng màu Đen - Trắng - Xám */
+      --bg-body: #f5f5f5;      /* Nền tổng thể xám rất nhạt */
+      --bg-panel: #ffffff;     /* Nền khung trắng */
+      --border-color: #a0a0a0; /* Viền xám đậm */
+      --text-main: #000000;    /* Chữ đen */
+      --text-muted: #666666;   /* Chữ xám */
+      --btn-bg: #000000;       /* Nút đen */
+      --btn-text: #ffffff;     /* Nút chữ trắng */
+      --btn-hover: #333333;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    body { background: var(--bg-body); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
     
-    header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--bg); }
-    .logo { font-weight: 700; font-size: 20px; letter-spacing: -0.5px; color: var(--text); }
-    .logo span { color: var(--primary); }
-    .lang-badge { font-size: 12px; background: var(--panel); color: var(--primary); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); font-weight: bold; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--border-color); background: var(--bg-panel); }
+    .logo { font-weight: 700; font-size: 20px; letter-spacing: -0.5px; color: var(--text-main); }
+    .logo span { color: var(--text-muted); }
     
     .banner-container { padding: 16px 24px 0; max-width: 1000px; margin: 0 auto; width: 100%; }
-    .banner { width: 100%; height: 140px; border-radius: 8px; background: url('https://www.image2url.com/r2/default/gifs/1792619935669-6803e9fd-f753-4013-8516-5e35b55ddcc0.gif') center/cover; border: 1px solid var(--border); }
+    .banner { width: 100%; height: 140px; border-radius: 8px; background: url('https://www.image2url.com/r2/default/gifs/1792619935669-6803e9fd-f753-4013-8516-5e35b55ddcc0.gif') center/cover; border: 1px solid var(--border-color); filter: grayscale(100%); /* Làm banner thành đen trắng */ }
 
     main { flex: 1; padding: 24px; display: flex; flex-direction: column; max-width: 1000px; margin: 0 auto; width: 100%; }
     
     .input-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
     input[type="password"], select {
-      background: var(--panel); border: 1px solid var(--border); color: var(--text);
+      background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main);
       padding: 12px 16px; border-radius: 6px; font-size: 14px; outline: none; transition: border 0.2s;
     }
-    input:focus, select:focus { border-color: var(--primary); }
+    input:focus, select:focus { border-color: var(--text-main); }
     .input-pw { flex: 1; min-width: 200px; }
     .input-exp { width: 150px; }
 
-    .editor-toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--panel); border: 1px solid var(--border); border-bottom: none; border-radius: 6px 6px 0 0; padding: 8px 12px; }
+    .editor-toolbar { display: flex; justify-content: space-between; align-items: center; background: #e0e0e0; border: 1px solid var(--border-color); border-bottom: none; border-radius: 6px 6px 0 0; padding: 8px 12px; flex-wrap: wrap; gap: 8px; }
     .toolbar-left { display: flex; gap: 8px; }
-    .tool-btn { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: 0.2s; }
-    .tool-btn:hover { background: var(--border); color: #fff; }
-    .toolbar-right { font-size: 12px; color: var(--muted); font-family: monospace; }
+    .tool-btn { background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 4px; }
+    .tool-btn:hover { background: var(--btn-bg); color: var(--btn-text); }
+    .toolbar-right { font-size: 12px; color: var(--text-muted); font-family: monospace; }
 
-    .editor-wrapper { flex: 1; min-height: 350px; border: 1px solid var(--border); border-radius: 0 0 6px 6px; overflow: hidden; margin-bottom: 16px; display: flex; flex-direction: column; }
-    .CodeMirror { height: 100% !important; font-family: 'Fira Code', 'Courier New', monospace !important; font-size: 14px !important; }
+    .editor-wrapper { flex: 1; min-height: 350px; border: 1px solid var(--border-color); border-radius: 0 0 6px 6px; overflow: hidden; margin-bottom: 16px; display: flex; flex-direction: column; background: var(--bg-panel); }
+    /* Đổi màu CodeMirror sang trắng đen */
+    .CodeMirror { height: 100% !important; font-family: 'Fira Code', 'Courier New', monospace !important; font-size: 14px !important; color: #000 !important; background: #fff !important; }
+    .CodeMirror-gutters { background: #f0f0f0 !important; border-right: 1px solid var(--border-color) !important; }
+    .CodeMirror-linenumber { color: #888 !important; }
 
     .options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
     
-    .btn { padding: 12px 24px; border-radius: 6px; border: none; font-weight: 600; font-size: 15px; cursor: pointer; color: #282a36; transition: background 0.2s; }
-    .btn-primary { background: var(--primary); }
-    .btn-primary:hover { background: var(--primary-hover); color: #fff; }
-    .btn-primary:disabled { background: #555; cursor: not-allowed; color: #aaa; }
+    .btn { padding: 12px 24px; border-radius: 6px; border: 1px solid var(--btn-bg); font-weight: 600; font-size: 15px; cursor: pointer; color: var(--btn-text); background: var(--btn-bg); transition: background 0.2s; display: flex; align-items: center; gap: 8px; }
+    .btn:hover { background: var(--btn-hover); }
+    .btn:disabled { background: #ccc; border-color: #ccc; cursor: not-allowed; color: #666; }
     
-    .result-box { display: none; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-top: 16px; }
-    .result-box h3 { margin-bottom: 12px; color: var(--success); font-size: 16px; display: flex; align-items: center; gap: 8px; }
+    .result-box { display: none; background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-top: 16px; }
+    .result-box h3 { margin-bottom: 12px; color: var(--text-main); font-size: 16px; display: flex; align-items: center; gap: 8px; }
     .result-input-group { display: flex; gap: 8px; margin-bottom: 12px; }
-    .result-input-group input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 6px; outline: none; font-family: monospace; }
-    .result-note { font-size: 13px; color: var(--muted); line-height: 1.5; }
-    .result-note code { background: var(--bg); padding: 2px 6px; border-radius: 4px; color: #f1fa8c; }
+    .result-input-group input { flex: 1; background: #fff; border: 1px solid var(--border-color); color: #000; padding: 12px; border-radius: 6px; outline: none; font-family: monospace; }
+    .result-note { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .result-note code { background: #e0e0e0; padding: 2px 6px; border-radius: 4px; color: #000; }
 
-    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 12px 24px; border-radius: 6px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100; }
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #000; border: 1px solid #333; color: #fff; padding: 12px 24px; border-radius: 6px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100; }
     #toast.show { opacity: 1; }
     
-    footer { padding: 24px; text-align: center; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; margin-top: auto; }
+    footer { padding: 24px; text-align: center; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 13px; margin-top: auto; background: var(--bg-panel); }
 
     body.raw-mode { background: #ffffff !important; color: #000000 !important; padding: 16px !important; font-family: monospace !important; white-space: pre-wrap !important; word-break: break-all !important; display: block !important; }
   </style>
@@ -82,8 +84,8 @@
 <body>
 
   <header>
-    <div class="logo">Bảo Mật <span>Source Code</span></div>
-    <div class="lang-badge" id="langDisplay">Ngôn ngữ: Lua</div>
+    <div class="logo">Bảo Mật <span>Source Lua</span></div>
+    <div class="lang-badge" style="font-size: 12px; border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 20px;">Định dạng: Lua / TXT</div>
   </header>
 
   <div class="banner-container">
@@ -92,8 +94,8 @@
 
   <main id="view-upload">
     <div style="margin-bottom: 16px;">
-      <h2 style="font-size: 18px; font-weight: 500; margin-bottom: 8px;">Dán code của bạn vào đây</h2>
-      <p style="color: var(--muted); font-size: 14px;">Hệ thống tự nhận diện ngôn ngữ. Riêng Lua sẽ được nén bảo mật tương thích Delta Executor.</p>
+      <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Dán code Lua của bạn vào đây</h2>
+      <p style="color: var(--text-muted); font-size: 14px;">Hệ thống sẽ nén và mã hóa bảo mật tương thích Delta Executor.</p>
     </div>
 
     <div class="input-row">
@@ -108,7 +110,8 @@
 
     <div class="editor-toolbar">
       <div class="toolbar-left">
-        <button class="tool-btn" onclick="formatCode()">Format Code</button>
+        <button class="tool-btn" onclick="pasteCode()">📋 Paste</button>
+        <button class="tool-btn" onclick="downloadCode()">⬇️ Tải file .lua</button>
         <button class="tool-btn" onclick="clearCode()">Xóa hết</button>
       </div>
       <div class="toolbar-right" id="editor-stats">Dòng: 1 | Ký tự: 0</div>
@@ -119,15 +122,15 @@
     </div>
 
     <div class="options">
-      <div class="cf-turnstile" data-sitekey="0x4AAAAAAFfwtx0XoDSuWH0z" data-theme="dark"></div>
-      <button class="btn btn-primary" id="submitBtn">🔒 Mã Hóa & Tạo Link</button>
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAAFfwtx0XoDSuWH0z" data-theme="light"></div>
+      <button class="btn" id="submitBtn">🔒 Mã Hóa & Tạo Link</button>
     </div>
 
     <div class="result-box" id="resultBox">
       <h3>✅ Đã mã hóa thành công!</h3>
       <div class="result-input-group">
         <input type="text" id="raw-link" readonly onclick="this.select()">
-        <button class="btn btn-primary" onclick="copyLink()">Copy</button>
+        <button class="btn" onclick="copyLink()" style="padding: 12px 20px;">Copy</button>
       </div>
       <p class="result-note">
         Sử dụng link trên trong Delta Executor:<br>
@@ -143,44 +146,21 @@
   <div id="toast">Thông báo</div>
 
   <script>
+    // Khởi tạo CodeMirror (Dùng theme mặc định để ra nền trắng, chữ đen)
     const editor = CodeMirror.fromTextArea(document.getElementById('code'), {
-      mode: "lua", theme: "dracula", lineNumbers: true, autoCloseBrackets: true, lineWrapping: true, indentUnit: 4
+      mode: "lua", lineNumbers: true, autoCloseBrackets: true, lineWrapping: true, indentUnit: 4
     });
-
-    function detectLanguage(code) {
-      if (!code.trim()) return "lua";
-      const jsPatterns = /(const |let |var |function |=>|console\.log|document\.|window\.)/;
-      const pyPatterns = /(def |import |from |print\(|elif |self\.|__init__)/;
-      const htmlPatterns = /(<html|<!DOCTYPE|<div|<body|<script)/i;
-      const cssPatterns = /({[^}]*:[^}]*;|@media|#[\w-]+\s*{|\.[\w-]+\s*{)/;
-      
-      if (jsPatterns.test(code)) return "javascript";
-      if (pyPatterns.test(code)) return "python";
-      if (htmlPatterns.test(code)) return "xml";
-      if (cssPatterns.test(code)) return "css";
-      return "lua";
-    }
 
     editor.on('change', () => {
       const code = editor.getValue();
-      const lang = detectLanguage(code);
-      editor.setOption("mode", lang);
-      
-      const displayNames = { "lua": "Lua", "javascript": "JavaScript", "python": "Python", "xml": "HTML", "css": "CSS" };
-      document.getElementById('langDisplay').textContent = `Ngôn ngữ: ${displayNames[lang] || "Lua"}`;
-      
       const lines = code.split('\n').length;
       document.getElementById('editor-stats').textContent = `Dòng: ${lines} | Ký tự: ${code.length}`;
-      
       localStorage.setItem('draft_code', code);
     });
 
     window.addEventListener('DOMContentLoaded', () => {
       const draft = localStorage.getItem('draft_code');
-      if (draft) {
-        editor.setValue(draft);
-        editor.setOption("mode", detectLanguage(draft));
-      }
+      if (draft) editor.setValue(draft);
     });
 
     function toast(msg) {
@@ -197,12 +177,28 @@
       toast('Đã copy link!');
     }
 
-    function formatCode() {
-      const totalLines = editor.lineCount();
-      editor.operation(() => {
-        for (let i = 0; i < totalLines; i++) editor.indentLine(i, "smart");
-      });
-      toast('Đã tự động thụt lề code!');
+    async function pasteCode() {
+      try {
+        const text = await navigator.clipboard.readText();
+        editor.setValue(text);
+        toast('Đã dán code từ bộ nhớ tạm!');
+      } catch (err) {
+        toast('Trình duyệt chặn quyền truy cập Clipboard. Hãy dán bằng tay (Ctrl+V).');
+      }
+    }
+
+    function downloadCode() {
+      const code = editor.getValue();
+      if (!code.trim()) return toast('Không có code để tải!');
+      
+      const blob = new Blob([code], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `script_${Date.now()}.lua`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('Đã tải file về máy!');
     }
 
     function clearCode() {
@@ -216,12 +212,10 @@
       "Ctrl-Enter": function() { document.getElementById('submitBtn').click(); }
     });
 
-    // ===== TẠO LINK =====
     document.getElementById('submitBtn').addEventListener('click', async () => {
       const code = editor.getValue();
       const pw = document.getElementById('password').value;
       const expire = parseInt(document.getElementById('expire').value);
-      const currentLang = editor.getOption("mode"); 
 
       if (!code.trim()) return toast('Vui lòng dán code vào!');
 
@@ -233,18 +227,8 @@
       document.getElementById('resultBox').style.display = 'none';
 
       try {
-        let finalCode = code;
-
-        // NẾU LÀ LUA -> MÃ HÓA TƯƠNG THÍCH DELTA
-        if (currentLang === "lua") {
-          // Chuyển code sang dạng Hex (dạng an toàn nhất để nhét vào chuỗi)
-          const hexStr = code.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
-          
-          // Script Lua tự giải mã Hex và chạy (Dùng gsub - cực kỳ tương thích với Delta)
-          finalCode = `-- Protected by Lua Security (Delta Compatible)\nlocal a = "${hexStr}";\nlocal b = a:gsub("..", function(c) return string.char(tonumber(c, 16)) end);\nloadstring(b)()`;
-        } else {
-          toast(`Đã lưu code ${currentLang}. Chỉ Lua mới được mã hóa bảo vệ!`);
-        }
+        const hexStr = code.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+        let finalCode = `-- Protected by Lua Security (Delta Compatible)\nlocal a = "${hexStr}";\nlocal b = a:gsub("..", function(c) return string.char(tonumber(c, 16)) end);\nloadstring(b)()`;
 
         const expireAt = expire > 0 ? Date.now() + (expire * 3600000) : null;
         const payload = encodeData({ code: finalCode, password: pw || null, expireAt });
@@ -275,7 +259,6 @@
       }
     });
 
-    // ===== XỬ LÝ LINK RAW =====
     window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const rawId = urlParams.get('raw');
