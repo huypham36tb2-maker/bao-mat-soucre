@@ -180,31 +180,18 @@
         // Tạo script Lua giải mã mảng byte và chạy
         let finalCode = `-- Delta Compatible Loadstring\nlocal bytes = {${byteStr}};\nlocal str = "";\nfor i = 1, #bytes do\n  str = str .. string.char(bytes[i]);\nend\nloadstring(str)()`;
 
-        // Dùng pastebin.com thay vì pastes.dev (không cần header User-Agent phức tạp)
-        // Lưu ý: pastebin.com yêu cầu api_dev_key và api_option, nhưng có một endpoint đơn giản hơn
-        // Chúng ta sẽ dùng pastebin.com/raw bằng cách tạo paste qua API công khai
-        const formData = new URLSearchParams();
-        formData.append('api_dev_key', 'YOUR_API_KEY'); // Cần đăng ký API key miễn phí
-        formData.append('api_option', 'paste');
-        formData.append('api_paste_code', finalCode);
-        formData.append('api_paste_private', '1'); // Unlisted
-        formData.append('api_paste_expire_date', '1W');
+        const payload = encodeData({ code: finalCode });
 
-        // Tạm thời dùng cách đơn giản hơn: dùng pastefy.app (miễn phí, không cần key)
-        const res = await fetch('https://pastefy.app/api/v1/paste', {
+        // Dùng pastes.dev (ổn định, không chặn CORS)
+        const res = await fetch('https://api.pastes.dev/post', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: finalCode,
-            title: 'Lua Script',
-            visibility: 'UNLISTED'
-          })
+          headers: { 'Content-Type': 'text/plain' },
+          body: payload
         });
 
         if (!res.ok) throw new Error();
         const data = await res.json();
-        const pasteId = data.id;
-        const rawUrl = `https://pastefy.app/${pasteId}/raw`;
+        const rawUrl = `${window.location.origin}/?raw=${data.key}`;
 
         document.getElementById('raw-link').value = rawUrl;
         document.getElementById('resultBox').style.display = 'block';
@@ -221,19 +208,23 @@
       }
     });
 
-    // Xử lý link raw (giữ nguyên)
+    // Xử lý link raw
     window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const rawId = urlParams.get('raw');
       
       if (rawId) {
         try {
-          const res = await fetch(`https://pastefy.app/${rawId}/raw`);
+          const res = await fetch(`https://api.pastes.dev/get/${rawId}`);
           if (!res.ok) throw new Error('Not Found');
+          
           const text = await res.text();
+          const data = decodeData(text);
+          
           document.body.innerHTML = ''; 
           document.body.className = 'raw-mode';
-          document.body.textContent = text;
+          document.body.textContent = data.code;
+
         } catch (e) {
           document.body.innerHTML = '<h1 style="padding:20px;font-family:sans-serif;color:red;">404 - Không tìm thấy code!</h1>';
         }
