@@ -23,16 +23,8 @@
 
   <style>
     :root {
-      /* Màu giao diện đồng bộ với Dracula Theme */
-      --bg: #282a36; 
-      --panel: #44475a; 
-      --border: #6272a4; 
-      --text: #f8f8f2; 
-      --muted: #6272a4; 
-      --primary: #bd93f9; 
-      --primary-hover: #ff79c6; 
-      --danger: #ff5555;
-      --success: #50fa7b; 
+      --bg: #282a36; --panel: #44475a; --border: #6272a4; --text: #f8f8f2; --muted: #6272a4; 
+      --primary: #bd93f9; --primary-hover: #ff79c6; --danger: #ff5555; --success: #50fa7b; 
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
@@ -56,7 +48,6 @@
     .input-pw { flex: 1; min-width: 200px; }
     .input-exp { width: 150px; }
 
-    /* Editor Toolbar */
     .editor-toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--panel); border: 1px solid var(--border); border-bottom: none; border-radius: 6px 6px 0 0; padding: 8px 12px; }
     .toolbar-left { display: flex; gap: 8px; }
     .tool-btn { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: 0.2s; }
@@ -102,7 +93,7 @@
   <main id="view-upload">
     <div style="margin-bottom: 16px;">
       <h2 style="font-size: 18px; font-weight: 500; margin-bottom: 8px;">Dán code của bạn vào đây</h2>
-      <p style="color: var(--muted); font-size: 14px;">Hệ thống tự nhận diện ngôn ngữ và đổi màu tương ứng.</p>
+      <p style="color: var(--muted); font-size: 14px;">Hệ thống tự nhận diện ngôn ngữ. Riêng Lua sẽ được nén bảo mật tương thích Delta Executor.</p>
     </div>
 
     <div class="input-row">
@@ -115,7 +106,6 @@
       </select>
     </div>
 
-    <!-- Toolbar -->
     <div class="editor-toolbar">
       <div class="toolbar-left">
         <button class="tool-btn" onclick="formatCode()">Format Code</button>
@@ -140,7 +130,7 @@
         <button class="btn btn-primary" onclick="copyLink()">Copy</button>
       </div>
       <p class="result-note">
-        Sử dụng link trên trong Executor (nếu là Lua):<br>
+        Sử dụng link trên trong Delta Executor:<br>
         <code>loadstring(game:HttpGet("LINK_CỦA_BẠN"))()</code>
       </p>
     </div>
@@ -153,16 +143,12 @@
   <div id="toast">Thông báo</div>
 
   <script>
-    // Khởi tạo CodeMirror
     const editor = CodeMirror.fromTextArea(document.getElementById('code'), {
       mode: "lua", theme: "dracula", lineNumbers: true, autoCloseBrackets: true, lineWrapping: true, indentUnit: 4
     });
 
-    // ===== TỰ ĐỘNG NHẬN DIỆN NGÔN NGỮ =====
     function detectLanguage(code) {
-      if (!code.trim()) return "lua"; // Mặc định
-      
-      // Regex nhận diện sơ bộ
+      if (!code.trim()) return "lua";
       const jsPatterns = /(const |let |var |function |=>|console\.log|document\.|window\.)/;
       const pyPatterns = /(def |import |from |print\(|elif |self\.|__init__)/;
       const htmlPatterns = /(<html|<!DOCTYPE|<div|<body|<script)/i;
@@ -170,43 +156,33 @@
       
       if (jsPatterns.test(code)) return "javascript";
       if (pyPatterns.test(code)) return "python";
-      if (htmlPatterns.test(code)) return "xml"; // HTML dùng mode xml
+      if (htmlPatterns.test(code)) return "xml";
       if (cssPatterns.test(code)) return "css";
-      
-      // Nếu không khớp gì, trả về Lua
       return "lua";
     }
 
-    // Cập nhật mode và giao diện mỗi khi code thay đổi
     editor.on('change', () => {
       const code = editor.getValue();
-      
-      // 1. Tự động nhận diện và đổi màu code
       const lang = detectLanguage(code);
       editor.setOption("mode", lang);
       
-      // 2. Hiển thị tên ngôn ngữ lên góc phải
       const displayNames = { "lua": "Lua", "javascript": "JavaScript", "python": "Python", "xml": "HTML", "css": "CSS" };
       document.getElementById('langDisplay').textContent = `Ngôn ngữ: ${displayNames[lang] || "Lua"}`;
       
-      // 3. Cập nhật số dòng, ký tự
       const lines = code.split('\n').length;
       document.getElementById('editor-stats').textContent = `Dòng: ${lines} | Ký tự: ${code.length}`;
       
-      // 4. Auto save
       localStorage.setItem('draft_code', code);
     });
 
-    // Tải nháp
     window.addEventListener('DOMContentLoaded', () => {
       const draft = localStorage.getItem('draft_code');
       if (draft) {
         editor.setValue(draft);
-        editor.setOption("mode", detectLanguage(draft)); // Đổi màu ngay khi load nháp
+        editor.setOption("mode", detectLanguage(draft));
       }
     });
 
-    // ===== CÁC TIỆN ÍCH KHÁC =====
     function toast(msg) {
       const t = document.getElementById('toast');
       t.textContent = msg; t.classList.add('show');
@@ -224,9 +200,7 @@
     function formatCode() {
       const totalLines = editor.lineCount();
       editor.operation(() => {
-        for (let i = 0; i < totalLines; i++) {
-          editor.indentLine(i, "smart");
-        }
+        for (let i = 0; i < totalLines; i++) editor.indentLine(i, "smart");
       });
       toast('Đã tự động thụt lề code!');
     }
@@ -247,14 +221,12 @@
       const code = editor.getValue();
       const pw = document.getElementById('password').value;
       const expire = parseInt(document.getElementById('expire').value);
-      const currentLang = editor.getOption("mode"); // Lấy ngôn ngữ hiện tại
+      const currentLang = editor.getOption("mode"); 
 
       if (!code.trim()) return toast('Vui lòng dán code vào!');
 
       const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]')?.value;
-      if (!turnstileResponse) {
-        return toast('Vui lòng hoàn thành xác thực Cloudflare!');
-      }
+      if (!turnstileResponse) return toast('Vui lòng hoàn thành xác thực Cloudflare!');
 
       const btn = document.getElementById('submitBtn');
       btn.textContent = 'Đang xử lý...'; btn.disabled = true;
@@ -263,13 +235,15 @@
       try {
         let finalCode = code;
 
-        // Nếu là code Lua thì mới nén thành Loadstring
+        // NẾU LÀ LUA -> MÃ HÓA TƯƠNG THÍCH DELTA
         if (currentLang === "lua") {
-          const b64 = btoa(unescape(encodeURIComponent(code)));
-          finalCode = `-- Protected by Lua Security\nlocal a = "${b64}";\nlocal b = "";\nfor i = 1, #a, 4 do\n  local c = a:sub(i, i+3);\n  b = b .. string.char(tonumber(c, 36));\nend\nloadstring(b)()`;
+          // Chuyển code sang dạng Hex (dạng an toàn nhất để nhét vào chuỗi)
+          const hexStr = code.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+          
+          // Script Lua tự giải mã Hex và chạy (Dùng gsub - cực kỳ tương thích với Delta)
+          finalCode = `-- Protected by Lua Security (Delta Compatible)\nlocal a = "${hexStr}";\nlocal b = a:gsub("..", function(c) return string.char(tonumber(c, 16)) end);\nloadstring(b)()`;
         } else {
-          // Các ngôn ngữ khác (JS, Python...) chỉ lưu text bình thường
-          toast(`Đã lưu code ${currentLang}. Lưu ý: Chỉ Lua mới được mã hóa bảo vệ!`);
+          toast(`Đã lưu code ${currentLang}. Chỉ Lua mới được mã hóa bảo vệ!`);
         }
 
         const expireAt = expire > 0 ? Date.now() + (expire * 3600000) : null;
