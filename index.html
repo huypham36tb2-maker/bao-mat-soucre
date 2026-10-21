@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảo Mật Source Lua</title>
+  
+  <!-- CodeMirror -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/lua/lua.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+
+  <!-- Cloudflare Turnstile -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+  <style>
+    :root {
+      --bg: #0f0f11; --panel: #18181b; --border: #27272a; --text: #f4f4f5;
+      --muted: #a1a1aa; --primary: #3b82f6; --primary-hover: #2563eb;
+      --danger: #ef4444; --success: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--bg); }
+    .logo { font-weight: 700; font-size: 20px; letter-spacing: -0.5px; color: var(--text); }
+    .logo span { color: var(--primary); }
+    
+    .banner-container { padding: 16px 24px 0; max-width: 1000px; margin: 0 auto; width: 100%; }
+    .banner { width: 100%; height: 140px; border-radius: 8px; background: url('https://www.image2url.com/r2/default/gifs/1792619935669-6803e9fd-f753-4013-8516-5e35b55ddcc0.gif') center/cover; border: 1px solid var(--border); }
+
+    main { flex: 1; padding: 24px; display: flex; flex-direction: column; max-width: 1000px; margin: 0 auto; width: 100%; }
+    
+    .input-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    input[type="password"], select {
+      background: var(--panel); border: 1px solid var(--border); color: var(--text);
+      padding: 12px 16px; border-radius: 6px; font-size: 14px; outline: none; transition: border 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--primary); }
+    .input-pw { flex: 1; min-width: 200px; }
+    .input-exp { width: 150px; }
+
+    .editor-wrapper { flex: 1; min-height: 350px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 16px; display: flex; flex-direction: column; }
+    .CodeMirror { height: 100% !important; font-family: 'Fira Code', 'Courier New', monospace !important; font-size: 14px !important; }
+
+    .options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    
+    .btn { padding: 12px 24px; border-radius: 6px; border: none; font-weight: 600; font-size: 15px; cursor: pointer; color: white; transition: background 0.2s; }
+    .btn-primary { background: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary:disabled { background: #555; cursor: not-allowed; }
+    
+    /* Kết quả */
+    .result-box { display: none; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-top: 16px; }
+    .result-box h3 { margin-bottom: 12px; color: var(--success); font-size: 16px; display: flex; align-items: center; gap: 8px; }
+    .result-input-group { display: flex; gap: 8px; margin-bottom: 12px; }
+    .result-input-group input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 6px; outline: none; font-family: monospace; }
+    .result-note { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .result-note code { background: var(--bg); padding: 2px 6px; border-radius: 4px; color: #f1c40f; }
+
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 12px 24px; border-radius: 6px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100; }
+    #toast.show { opacity: 1; }
+    
+    footer { padding: 24px; text-align: center; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; margin-top: auto; }
+
+    body.raw-mode { background: #ffffff !important; color: #000000 !important; padding: 16px !important; font-family: monospace !important; white-space: pre-wrap !important; word-break: break-all !important; display: block !important; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">Bảo Mật <span>Source Lua</span></div>
+  </header>
+
+  <div class="banner-container">
+    <div class="banner"></div>
+  </div>
+
+  <main id="view-upload">
+    <div style="margin-bottom: 16px;">
+      <h2 style="font-size: 18px; font-weight: 500; margin-bottom: 8px;">Dán code Lua của bạn vào đây</h2>
+      <p style="color: var(--muted); font-size: 14px;">Hệ thống sẽ nén và mã hóa thành chuỗi Loadstring. Người khác không thể đọc được source gốc.</p>
+    </div>
+
+    <div class="input-row">
+      <input type="password" id="password" class="input-pw" placeholder="Mật khẩu bảo vệ (Bỏ trống nếu không cần)">
+      <select id="expire" class="input-exp">
+        <option value="0">Vĩnh viễn</option>
+        <option value="1">1 Giờ</option>
+        <option value="24">1 Ngày</option>
+        <option value="168">7 Ngày</option>
+      </select>
+    </div>
+
+    <div class="editor-wrapper">
+      <textarea id="code"></textarea>
+    </div>
+
+    <div class="options">
+      <!-- Cloudflare Turnstile (Chỉ dùng Site Key) -->
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAAFfvzQ3oDbmhaaCY" data-theme="dark"></div>
+      <button class="btn btn-primary" id="submitBtn">🔒 Mã Hóa & Tạo Link</button>
+    </div>
+
+    <!-- Khung kết quả -->
+    <div class="result-box" id="resultBox">
+      <h3>✅ Đã mã hóa thành công!</h3>
+      <div class="result-input-group">
+        <input type="text" id="raw-link" readonly onclick="this.select()">
+        <button class="btn btn-primary" onclick="copyLink()">Copy</button>
+      </div>
+      <p class="result-note">
+        Sử dụng link trên trong Executor:<br>
+        <code>loadstring(game:HttpGet("LINK_CỦA_BẠN"))()</code>
+      </p>
+    </div>
+  </main>
+
+  <footer>
+    &copy; 2024 Lua Source Protection. Hệ thống mã hóa tự động.
+  </footer>
+
+  <div id="toast">Thông báo</div>
+
+  <script>
+    const editor = CodeMirror.fromTextArea(document.getElementById('code'), {
+      mode: "lua", theme: "dracula", lineNumbers: true, autoCloseBrackets: true, lineWrapping: true, indentUnit: 4
+    });
+
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    function encodeData(data) { return btoa(unescape(encodeURIComponent(JSON.stringify(data)))); }
+    function decodeData(str) { return JSON.parse(decodeURIComponent(escape(atob(str)))); }
+
+    function copyLink() { 
+      navigator.clipboard.writeText(document.getElementById('raw-link').value);
+      toast('Đã copy link!');
+    }
+
+    // ===== XỬ LÝ TẠO LINK =====
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+      const code = editor.getValue();
+      const pw = document.getElementById('password').value;
+      const expire = parseInt(document.getElementById('expire').value);
+
+      if (!code.trim()) return toast('Vui lòng dán code Lua vào!');
+
+      // Kiểm tra Turnstile
+      const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]')?.value;
+      if (!turnstileResponse) {
+        return toast('Vui lòng hoàn thành xác thực Cloudflare!');
+      }
+
+      // Cooldown 15s chống spam
+      const lastPost = localStorage.getItem('last_post_time');
+      const now = Date.now();
+      if (lastPost && (now - parseInt(lastPost)) < 15000) {
+        const timeLeft = Math.ceil((15000 - (now - parseInt(lastPost))) / 1000);
+        return toast(`Vui lòng đợi ${timeLeft} giây để tiếp tục!`);
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.textContent = 'Đang xử lý...'; btn.disabled = true;
+      document.getElementById('resultBox').style.display = 'none';
+
+      try {
+        // MÃ HÓA LUA THÀNH CHUỖI LOADSTRING
+        const b64 = btoa(unescape(encodeURIComponent(code)));
+        let finalCode = `-- Protected by Lua Security\nlocal a = "${b64}";\nlocal b = "";\nfor i = 1, #a, 4 do\n  local c = a:sub(i, i+3);\n  b = b .. string.char(tonumber(c, 36));\nend\nloadstring(b)()`;
+
+        const expireAt = expire > 0 ? now + (expire * 3600000) : null;
+        const payload = encodeData({ code: finalCode, password: pw || null, expireAt });
+
+        const res = await fetch('https://api.pastes.dev/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: payload
+        });
+
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const rawUrl = `${window.location.origin}/?raw=${data.key}`;
+
+        localStorage.setItem('last_post_time', now.toString());
+
+        document.getElementById('raw-link').value = rawUrl;
+        document.getElementById('resultBox').style.display = 'block';
+        
+        editor.setValue('');
+        document.getElementById('password').value = '';
+        
+        if (window.turnstile) window.turnstile.reset();
+
+      } catch (err) {
+        toast('Lỗi khi kết nối tới Server API!');
+      } finally {
+        btn.textContent = '🔒 Mã Hóa & Tạo Link'; btn.disabled = false;
+      }
+    });
+
+    // ===== XỬ LÝ LINK RAW =====
+    window.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const rawId = urlParams.get('raw');
+      
+      if (rawId) {
+        try {
+          const res = await fetch(`https://api.pastes.dev/get/${rawId}`);
+          if (!res.ok) throw new Error('Not Found');
+          
+          const text = await res.text();
+          const data = decodeData(text);
+          
+          if (data.expireAt && Date.now() > data.expireAt) {
+            document.body.innerHTML = '<h1 style="padding:20px;font-family:sans-serif;color:red;">404 - Link đã hết hạn!</h1>';
+            return;
+          }
+
+          if (data.password) {
+            const input = prompt('Script này cần mật khẩu để chạy:');
+            if (input !== data.password) {
+              document.body.innerHTML = '<h1 style="padding:20px;font-family:sans-serif;color:red;">403 - Sai mật khẩu!</h1>';
+              return;
+            }
+          }
+
+          document.body.innerHTML = ''; 
+          document.body.className = 'raw-mode';
+          document.body.textContent = data.code;
+
+        } catch (e) {
+          document.body.innerHTML = '<h1 style="padding:20px;font-family:sans-serif;color:red;">404 - Không tìm thấy code!</h1>';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
