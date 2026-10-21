@@ -3,13 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bảo Mật Source Lua</title>
+  <title>Bảo Mật Source Code - Pro</title>
   
   <!-- CodeMirror -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+  
+  <!-- Các Mode ngôn ngữ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/lua/lua.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
 
   <!-- Cloudflare Turnstile -->
@@ -17,9 +23,16 @@
 
   <style>
     :root {
-      --bg: #0f0f11; --panel: #18181b; --border: #27272a; --text: #f4f4f5;
-      --muted: #a1a1aa; --primary: #3b82f6; --primary-hover: #2563eb;
-      --danger: #ef4444; --success: #22c55e;
+      /* Màu giao diện đồng bộ với Dracula Theme */
+      --bg: #282a36; 
+      --panel: #44475a; 
+      --border: #6272a4; 
+      --text: #f8f8f2; 
+      --muted: #6272a4; 
+      --primary: #bd93f9; 
+      --primary-hover: #ff79c6; 
+      --danger: #ff5555;
+      --success: #50fa7b; 
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
@@ -27,6 +40,7 @@
     header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--bg); }
     .logo { font-weight: 700; font-size: 20px; letter-spacing: -0.5px; color: var(--text); }
     .logo span { color: var(--primary); }
+    .lang-badge { font-size: 12px; background: var(--panel); color: var(--primary); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); font-weight: bold; }
     
     .banner-container { padding: 16px 24px 0; max-width: 1000px; margin: 0 auto; width: 100%; }
     .banner { width: 100%; height: 140px; border-radius: 8px; background: url('https://www.image2url.com/r2/default/gifs/1792619935669-6803e9fd-f753-4013-8516-5e35b55ddcc0.gif') center/cover; border: 1px solid var(--border); }
@@ -42,23 +56,29 @@
     .input-pw { flex: 1; min-width: 200px; }
     .input-exp { width: 150px; }
 
-    .editor-wrapper { flex: 1; min-height: 350px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 16px; display: flex; flex-direction: column; }
+    /* Editor Toolbar */
+    .editor-toolbar { display: flex; justify-content: space-between; align-items: center; background: var(--panel); border: 1px solid var(--border); border-bottom: none; border-radius: 6px 6px 0 0; padding: 8px 12px; }
+    .toolbar-left { display: flex; gap: 8px; }
+    .tool-btn { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; transition: 0.2s; }
+    .tool-btn:hover { background: var(--border); color: #fff; }
+    .toolbar-right { font-size: 12px; color: var(--muted); font-family: monospace; }
+
+    .editor-wrapper { flex: 1; min-height: 350px; border: 1px solid var(--border); border-radius: 0 0 6px 6px; overflow: hidden; margin-bottom: 16px; display: flex; flex-direction: column; }
     .CodeMirror { height: 100% !important; font-family: 'Fira Code', 'Courier New', monospace !important; font-size: 14px !important; }
 
     .options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
     
-    .btn { padding: 12px 24px; border-radius: 6px; border: none; font-weight: 600; font-size: 15px; cursor: pointer; color: white; transition: background 0.2s; }
+    .btn { padding: 12px 24px; border-radius: 6px; border: none; font-weight: 600; font-size: 15px; cursor: pointer; color: #282a36; transition: background 0.2s; }
     .btn-primary { background: var(--primary); }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-primary:disabled { background: #555; cursor: not-allowed; }
+    .btn-primary:hover { background: var(--primary-hover); color: #fff; }
+    .btn-primary:disabled { background: #555; cursor: not-allowed; color: #aaa; }
     
-    /* Kết quả */
     .result-box { display: none; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-top: 16px; }
     .result-box h3 { margin-bottom: 12px; color: var(--success); font-size: 16px; display: flex; align-items: center; gap: 8px; }
     .result-input-group { display: flex; gap: 8px; margin-bottom: 12px; }
     .result-input-group input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 6px; outline: none; font-family: monospace; }
     .result-note { font-size: 13px; color: var(--muted); line-height: 1.5; }
-    .result-note code { background: var(--bg); padding: 2px 6px; border-radius: 4px; color: #f1c40f; }
+    .result-note code { background: var(--bg); padding: 2px 6px; border-radius: 4px; color: #f1fa8c; }
 
     #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 12px 24px; border-radius: 6px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100; }
     #toast.show { opacity: 1; }
@@ -71,7 +91,8 @@
 <body>
 
   <header>
-    <div class="logo">Bảo Mật <span>Source Lua</span></div>
+    <div class="logo">Bảo Mật <span>Source Code</span></div>
+    <div class="lang-badge" id="langDisplay">Ngôn ngữ: Lua</div>
   </header>
 
   <div class="banner-container">
@@ -80,8 +101,8 @@
 
   <main id="view-upload">
     <div style="margin-bottom: 16px;">
-      <h2 style="font-size: 18px; font-weight: 500; margin-bottom: 8px;">Dán code Lua của bạn vào đây</h2>
-      <p style="color: var(--muted); font-size: 14px;">Hệ thống sẽ nén và mã hóa thành chuỗi Loadstring. Người khác không thể đọc được source gốc.</p>
+      <h2 style="font-size: 18px; font-weight: 500; margin-bottom: 8px;">Dán code của bạn vào đây</h2>
+      <p style="color: var(--muted); font-size: 14px;">Hệ thống tự nhận diện ngôn ngữ và đổi màu tương ứng.</p>
     </div>
 
     <div class="input-row">
@@ -94,17 +115,24 @@
       </select>
     </div>
 
+    <!-- Toolbar -->
+    <div class="editor-toolbar">
+      <div class="toolbar-left">
+        <button class="tool-btn" onclick="formatCode()">Format Code</button>
+        <button class="tool-btn" onclick="clearCode()">Xóa hết</button>
+      </div>
+      <div class="toolbar-right" id="editor-stats">Dòng: 1 | Ký tự: 0</div>
+    </div>
+
     <div class="editor-wrapper">
       <textarea id="code"></textarea>
     </div>
 
     <div class="options">
-      <!-- Cloudflare Turnstile (Chỉ dùng Site Key) -->
-      <div class="cf-turnstile" data-sitekey="0x4AAAAAAFfvzQ3oDbmhaaCY" data-theme="dark"></div>
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAAFfwtx0XoDSuWH0z" data-theme="dark"></div>
       <button class="btn btn-primary" id="submitBtn">🔒 Mã Hóa & Tạo Link</button>
     </div>
 
-    <!-- Khung kết quả -->
     <div class="result-box" id="resultBox">
       <h3>✅ Đã mã hóa thành công!</h3>
       <div class="result-input-group">
@@ -112,23 +140,73 @@
         <button class="btn btn-primary" onclick="copyLink()">Copy</button>
       </div>
       <p class="result-note">
-        Sử dụng link trên trong Executor:<br>
+        Sử dụng link trên trong Executor (nếu là Lua):<br>
         <code>loadstring(game:HttpGet("LINK_CỦA_BẠN"))()</code>
       </p>
     </div>
   </main>
 
   <footer>
-    &copy; 2024 Lua Source Protection. Hệ thống mã hóa tự động.
+    &copy; 2024 Code Protection. Hệ thống mã hóa tự động.
   </footer>
 
   <div id="toast">Thông báo</div>
 
   <script>
+    // Khởi tạo CodeMirror
     const editor = CodeMirror.fromTextArea(document.getElementById('code'), {
       mode: "lua", theme: "dracula", lineNumbers: true, autoCloseBrackets: true, lineWrapping: true, indentUnit: 4
     });
 
+    // ===== TỰ ĐỘNG NHẬN DIỆN NGÔN NGỮ =====
+    function detectLanguage(code) {
+      if (!code.trim()) return "lua"; // Mặc định
+      
+      // Regex nhận diện sơ bộ
+      const jsPatterns = /(const |let |var |function |=>|console\.log|document\.|window\.)/;
+      const pyPatterns = /(def |import |from |print\(|elif |self\.|__init__)/;
+      const htmlPatterns = /(<html|<!DOCTYPE|<div|<body|<script)/i;
+      const cssPatterns = /({[^}]*:[^}]*;|@media|#[\w-]+\s*{|\.[\w-]+\s*{)/;
+      
+      if (jsPatterns.test(code)) return "javascript";
+      if (pyPatterns.test(code)) return "python";
+      if (htmlPatterns.test(code)) return "xml"; // HTML dùng mode xml
+      if (cssPatterns.test(code)) return "css";
+      
+      // Nếu không khớp gì, trả về Lua
+      return "lua";
+    }
+
+    // Cập nhật mode và giao diện mỗi khi code thay đổi
+    editor.on('change', () => {
+      const code = editor.getValue();
+      
+      // 1. Tự động nhận diện và đổi màu code
+      const lang = detectLanguage(code);
+      editor.setOption("mode", lang);
+      
+      // 2. Hiển thị tên ngôn ngữ lên góc phải
+      const displayNames = { "lua": "Lua", "javascript": "JavaScript", "python": "Python", "xml": "HTML", "css": "CSS" };
+      document.getElementById('langDisplay').textContent = `Ngôn ngữ: ${displayNames[lang] || "Lua"}`;
+      
+      // 3. Cập nhật số dòng, ký tự
+      const lines = code.split('\n').length;
+      document.getElementById('editor-stats').textContent = `Dòng: ${lines} | Ký tự: ${code.length}`;
+      
+      // 4. Auto save
+      localStorage.setItem('draft_code', code);
+    });
+
+    // Tải nháp
+    window.addEventListener('DOMContentLoaded', () => {
+      const draft = localStorage.getItem('draft_code');
+      if (draft) {
+        editor.setValue(draft);
+        editor.setOption("mode", detectLanguage(draft)); // Đổi màu ngay khi load nháp
+      }
+    });
+
+    // ===== CÁC TIỆN ÍCH KHÁC =====
     function toast(msg) {
       const t = document.getElementById('toast');
       t.textContent = msg; t.classList.add('show');
@@ -137,32 +215,45 @@
 
     function encodeData(data) { return btoa(unescape(encodeURIComponent(JSON.stringify(data)))); }
     function decodeData(str) { return JSON.parse(decodeURIComponent(escape(atob(str)))); }
-
+    
     function copyLink() { 
       navigator.clipboard.writeText(document.getElementById('raw-link').value);
       toast('Đã copy link!');
     }
 
-    // ===== XỬ LÝ TẠO LINK =====
+    function formatCode() {
+      const totalLines = editor.lineCount();
+      editor.operation(() => {
+        for (let i = 0; i < totalLines; i++) {
+          editor.indentLine(i, "smart");
+        }
+      });
+      toast('Đã tự động thụt lề code!');
+    }
+
+    function clearCode() {
+      if(confirm('Bạn có chắc muốn xóa toàn bộ code?')) {
+        editor.setValue('');
+        localStorage.removeItem('draft_code');
+      }
+    }
+
+    editor.setOption("extraKeys", {
+      "Ctrl-Enter": function() { document.getElementById('submitBtn').click(); }
+    });
+
+    // ===== TẠO LINK =====
     document.getElementById('submitBtn').addEventListener('click', async () => {
       const code = editor.getValue();
       const pw = document.getElementById('password').value;
       const expire = parseInt(document.getElementById('expire').value);
+      const currentLang = editor.getOption("mode"); // Lấy ngôn ngữ hiện tại
 
-      if (!code.trim()) return toast('Vui lòng dán code Lua vào!');
+      if (!code.trim()) return toast('Vui lòng dán code vào!');
 
-      // Kiểm tra Turnstile
       const turnstileResponse = document.querySelector('[name="cf-turnstile-response"]')?.value;
       if (!turnstileResponse) {
         return toast('Vui lòng hoàn thành xác thực Cloudflare!');
-      }
-
-      // Cooldown 15s chống spam
-      const lastPost = localStorage.getItem('last_post_time');
-      const now = Date.now();
-      if (lastPost && (now - parseInt(lastPost)) < 15000) {
-        const timeLeft = Math.ceil((15000 - (now - parseInt(lastPost))) / 1000);
-        return toast(`Vui lòng đợi ${timeLeft} giây để tiếp tục!`);
       }
 
       const btn = document.getElementById('submitBtn');
@@ -170,11 +261,18 @@
       document.getElementById('resultBox').style.display = 'none';
 
       try {
-        // MÃ HÓA LUA THÀNH CHUỖI LOADSTRING
-        const b64 = btoa(unescape(encodeURIComponent(code)));
-        let finalCode = `-- Protected by Lua Security\nlocal a = "${b64}";\nlocal b = "";\nfor i = 1, #a, 4 do\n  local c = a:sub(i, i+3);\n  b = b .. string.char(tonumber(c, 36));\nend\nloadstring(b)()`;
+        let finalCode = code;
 
-        const expireAt = expire > 0 ? now + (expire * 3600000) : null;
+        // Nếu là code Lua thì mới nén thành Loadstring
+        if (currentLang === "lua") {
+          const b64 = btoa(unescape(encodeURIComponent(code)));
+          finalCode = `-- Protected by Lua Security\nlocal a = "${b64}";\nlocal b = "";\nfor i = 1, #a, 4 do\n  local c = a:sub(i, i+3);\n  b = b .. string.char(tonumber(c, 36));\nend\nloadstring(b)()`;
+        } else {
+          // Các ngôn ngữ khác (JS, Python...) chỉ lưu text bình thường
+          toast(`Đã lưu code ${currentLang}. Lưu ý: Chỉ Lua mới được mã hóa bảo vệ!`);
+        }
+
+        const expireAt = expire > 0 ? Date.now() + (expire * 3600000) : null;
         const payload = encodeData({ code: finalCode, password: pw || null, expireAt });
 
         const res = await fetch('https://api.pastes.dev/post', {
@@ -187,12 +285,11 @@
         const data = await res.json();
         const rawUrl = `${window.location.origin}/?raw=${data.key}`;
 
-        localStorage.setItem('last_post_time', now.toString());
-
         document.getElementById('raw-link').value = rawUrl;
         document.getElementById('resultBox').style.display = 'block';
         
         editor.setValue('');
+        localStorage.removeItem('draft_code');
         document.getElementById('password').value = '';
         
         if (window.turnstile) window.turnstile.reset();
